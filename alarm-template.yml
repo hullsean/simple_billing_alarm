@@ -1,0 +1,50 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Adds $50 monthly billing alarm to aws account"
+
+Parameters:
+  MaxCost:
+    Type: Number
+    Default: 50
+  RecipientEmailAddress:
+    Type: String
+    Default: hullsean@gmail.com
+
+Resources:
+  Alarm:
+    Type: "AWS::CloudWatch::Alarm"
+    Properties:
+      ActionsEnabled: true
+      AlarmActions:
+        - !Ref AlertingTopic
+      AlarmDescription: >
+        Alarm for billing overusage of this account.
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: Currency
+          Value: USD
+      EvaluationPeriods: 1
+      MetricName: EstimatedCharges
+      Namespace: "AWS/Billing"
+      OKActions:
+        - !Ref AlertingTopic
+      Period: 518400   # 1 day in seconds
+      Statistic: Maximum
+      Threshold: !Ref MaxCost
+
+  AlertingTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      DisplayName: !Sub "Your ${MaxCost} Billing Alert"
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref RecipientEmailAddress
+
+Outputs:
+  AlarmArn:
+    Value: !Ref Alarm
+  AlertTopicArn:
+    Value: !Ref AlertingTopic
+    Export:
+      Name: "billing-alerts:sns:arn"
+
